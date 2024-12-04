@@ -1,0 +1,141 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// Définition des constantes pour les types de pions et les couleurs
+#define PION_BLEU 1
+#define DAME_BLEU 2
+#define PION_ROUGE 3
+#define DAME_ROUGE 4
+#define PION_JAUNE 5
+#define DAME_JAUNE 6
+#define PION_VERT 7
+#define DAME_VERT 8
+#define CASE_VIDE 0
+
+// Dimensions du plateau
+#define TAILLE 13 // Le plateau est 13x13
+
+// Structure du plateau de jeu
+typedef struct {
+    int plateau[TAILLE][TAILLE]; // État du plateau
+    int nb_bleu, nb_rouge, nb_jaune, nb_vert; // Nombre de pions pour chaque couleur
+} Damier;
+
+// Fonction pour initialiser le damier
+void init_damier(Damier* jeu) {
+    // Initialisation des nombres de pions
+    jeu->nb_bleu = 22;
+    jeu->nb_rouge = 22;
+    jeu->nb_jaune = 22;
+    jeu->nb_vert = 22;
+
+    // Initialisation du tableau
+    for (int i = 0; i < TAILLE; i++) {
+        for (int j = 0; j < TAILLE; j++) {
+            jeu->plateau[i][j] = CASE_VIDE;
+        }
+    }
+
+    // Placement des pions bleus (haut)
+    for (int i = 0; i < 4; i++) {
+        for (int j = 4; j < 9; j++) {
+            if ((i + j) % 2 == 1) { // Cases noires seulement
+                jeu->plateau[i][j] = PION_BLEU;
+            }
+        }
+    }
+
+    // Placement des pions rouges (bas)
+    for (int i = 9; i < 13; i++) {
+        for (int j = 4; j < 9; j++) {
+            if ((i + j) % 2 == 1) { // Cases noires seulement
+                jeu->plateau[i][j] = PION_ROUGE;
+            }
+        }
+    }
+
+    // Placement des pions jaunes (droite)
+    for (int i = 4; i < 9; i++) {
+        for (int j = 9; j < 13; j++) {
+            if ((i + j) % 2 == 1) { // Cases noires seulement
+                jeu->plateau[i][j] = PION_JAUNE;
+            }
+        }
+    }
+
+    // Placement des pions verts (gauche)
+    for (int i = 4; i < 9; i++) {
+        for (int j = 0; j < 4; j++) {
+            if ((i + j) % 2 == 1) { // Cases noires seulement
+                jeu->plateau[i][j] = PION_VERT;
+            }
+        }
+    }
+}
+
+// Fonction pour afficher une ligne du damier
+void affiche_ligne(int i, int plateau[TAILLE][TAILLE]) {
+    for (int j = 0; j < TAILLE; j++) {
+        switch (plateau[i][j]) {
+            case PION_BLEU:
+                printf("| B ");
+                break;
+            case DAME_BLEU:
+                printf("|[B]");
+                break;
+            case PION_ROUGE:
+                printf("| R ");
+                break;
+            case DAME_ROUGE:
+                printf("|[R]");
+                break;
+            case PION_JAUNE:
+                printf("| J ");
+                break;
+            case DAME_JAUNE:
+                printf("|[J]");
+                break;
+            case PION_VERT:
+                printf("| V ");
+                break;
+            case DAME_VERT:
+                printf("|[V]");
+                break;
+            case CASE_VIDE:
+                printf("|   ");
+                break;
+            default:
+                printf("| ? "); // Cas invalide (debug)
+                break;
+        }
+    }
+    printf("|\n");
+}
+
+// Fonction pour afficher le damier complet
+void affiche_damier(int plateau[TAILLE][TAILLE]) {
+    printf("   "); // Espacement pour les indices des colonnes
+    for (int i = 0; i < TAILLE; i++) {
+        printf(" %2d ", i + 1);
+    }
+    printf("\n");
+
+    for (int i = 0; i < TAILLE; i++) {
+        printf("%2d ", i + 1); // Afficher les indices des lignes
+        affiche_ligne(i, plateau);
+        printf("\n");
+    }
+}
+
+int main() {
+    Damier damier;
+
+    // Initialisation du damier
+    init_damier(&damier);
+
+    // Affichage du damier
+    printf("\nÉtat initial du damier :\n");
+    affiche_damier(damier.plateau);
+
+    return 0;
+}
