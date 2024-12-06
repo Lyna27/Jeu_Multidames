@@ -1,0 +1,61 @@
+#define TAILLE 16 // Dimensions de la matrice (16x16)
+
+// Codes ANSI pour les couleurs
+#define RESET "\033[0m"   // Réinitialisation des styles
+#define FOND_ROUGE "\033[41m" // Fond rouge
+#define FOND_NOIR "\033[40m"  // Fond noir
+#define FOND_BLANC "\033[47m" // Fond blanc
+
+/**
+ * Vérifie si une cellule appartient à l'un des 4 coins rouges de la matrice qui sont non affectables.
+ * Coins rouges :
+ * - Coin supérieur gauche (lignes 0-3, colonnes 0-3)
+ * - Coin inférieur gauche (lignes 13-16, colonnes 0-3)
+ * - Coin supérieur droit (lignes 0-3, colonnes 12-16)
+ * - Coin inférieur droit (lignes 12-16, colonnes 12-16)
+ */
+int Coin_Rouge(int ligne, int colonne) {
+    return ((ligne >= 0 && ligne <= 3 && colonne >= 0 && colonne <= 3) ||       // Coin supérieur gauche
+            (ligne >= 12 && ligne <= 16 && colonne >= 0 && colonne <= 3) ||    // Coin inférieur gauche
+            (ligne >= 0 && ligne <= 3 && colonne >= 12 && colonne <= 16) ||    // Coin supérieur droit
+            (ligne >= 12 && ligne <= 16 && colonne >= 12 && colonne <= 16));   // Coin inférieur droit
+}
+
+/**
+ * Affiche une cellule selon sa position :
+ * - Rouge si la cellule est dans un coin rouge.
+ * - Alternance blanche/noire dans le reste de la matrice.
+ */
+void afficher_Cellule(int ligne, int colonne) {
+    if (Coin_Rouge(ligne, colonne)) {
+        printf(FOND_ROUGE "   " RESET); // Fond rouge
+    } else {
+        // Alternance : blanc si (ligne + colonne) est pair, noir sinon
+        if ((ligne + colonne) % 2 == 0) {
+            printf(FOND_BLANC "   " RESET);
+        } else {
+            printf(FOND_NOIR "   " RESET);
+        }
+    }
+}
+
+/**
+ * Affiche la matrice complète avec un damier et des coins rouges pour les cases non affectables.
+ */
+void afficher_Matrice() {
+    for (int ligne = 0; ligne < TAILLE; ligne++) {
+        for (int colonne = 0; colonne < TAILLE; colonne++) {
+            afficher_Cellule(ligne, colonne);
+        }
+        printf("\n"); // Saut de ligne après chaque rangée
+    }
+}
+
+/**
+ * Point d'entrée principal.
+ */
+int main() {
+    printf("Matrice alternée (damier blanc/noir) avec coins rouges :\n\n");
+    afficher_Matrice();
+    return 0;
+}
