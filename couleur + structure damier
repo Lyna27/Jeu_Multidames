@@ -1,0 +1,177 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// Définition des constantes pour les types de pions et les couleurs
+#define PION_BLEU 1
+#define DAME_BLEU 2
+#define PION_ROUGE 3
+#define DAME_ROUGE 4
+#define PION_JAUNE 5
+#define DAME_JAUNE 6
+#define PION_VERT 7
+#define DAME_VERT 8
+#define CASE_VIDE 0
+
+// Dimensions du plateau
+#define TAILLE 17 // Le plateau est 17x17
+
+// Codes ANSI pour les couleurs
+#define RESET "\033[0m"   // Réinitialisation des styles
+#define FOND_CYAN "\033[46m" // Fond cyan
+#define FOND_NOIR "\033[40m"  // Fond noir
+#define FOND_BLANC "\033[47m" // Fond blanc
+#define TXT_BLEU "\033[34m"   // Texte bleu
+
+// Structure du plateau de jeu
+typedef struct {
+    int index[TAILLE][TAILLE]; // État du plateau
+    int nb_bleu, nb_rouge, nb_jaune, nb_vert; // Nombre de pions pour chaque couleur
+} Damier;
+
+/*
+ * Vérifie si une cellule appartient à l'un des 4 coins cyans de la matrice qui sont non affectables.
+ */
+int Coin_Cyan(int i, int j) {
+    return ((i >= 0 && i <= 3 && j >= 0 && j <= 3) ||       // Coin supérieur gauche
+            (i >= 13 && i <= TAILLE && j >= 0 && j <= 3) || // Coin inférieur gauche
+            (i >= 0 && i <= 3 && j >= 13 && j <= TAILLE) || // Coin supérieur droit
+            (i >= 13 && i <= TAILLE && j >= 13 && j <= TAILLE)); // Coin inférieur droit
+}
+
+/*
+ * Initialise le damier avec les pions dans les positions de départ.
+ */
+void init_damier(Damier* jeu) {
+    // Initialisation des nombres de pions
+    jeu->nb_bleu = 22;
+    jeu->nb_rouge = 22;
+    jeu->nb_jaune = 22;
+    jeu->nb_vert = 22;
+
+    // Initialisation du tableau
+    for (int i = 0; i < TAILLE; i++) {
+        for (int j = 0; j < TAILLE; j++) {
+            jeu->index[i][j] = CASE_VIDE;
+        }
+    }
+
+    // Placement des pions bleus (haut)
+    for (int i = 0; i < 5; i++) {
+        for (int j = 4; j < 13; j++) {
+            if ((i + j) % 2 == 1) { // Cases noires seulement
+                jeu->index[i][j] = PION_BLEU;
+            }
+        }
+    }
+
+    // Placement des pions rouges (bas)
+    for (int i = 12; i < 17; i++) {
+        for (int j = 4; j < 13; j++) {
+            if ((i + j) % 2 == 1) { // Cases noires seulement
+                jeu->index[i][j] = PION_ROUGE;
+            }
+        }
+    }
+
+    // Placement des pions jaunes (droite)
+    for (int i = 4; i < 13; i++) {
+        for (int j = 12; j < TAILLE; j++) {
+            if ((i + j) % 2 == 1) { // Cases noires seulement
+                jeu->index[i][j] = PION_JAUNE;
+            }
+        }
+    }
+
+    // Placement des pions verts (gauche)
+    for (int i = 4; i < 13; i++) {
+        for (int j = 0; j < 5; j++) {
+            if ((i + j) % 2 == 1) { // Cases noires seulement
+                jeu->index[i][j] = PION_VERT;
+            }
+        }
+    }
+}
+
+/*
+ * Affiche une cellule selon son état dans le damier.
+ */
+void afficher_Cellule(int i, int j, int index[TAILLE][TAILLE]) {
+    if (Coin_Cyan(i, j)) {
+        printf(FOND_CYAN "  " RESET); // Fond cyan
+    } else {
+        switch (index[i][j]) {
+            case PION_BLEU:
+                printf(FOND_NOIR TXT_BLEU " B " RESET);
+                break;
+            case DAME_BLEU:
+                printf(FOND_NOIR TXT_BLEU "[B]" RESET);
+                break;
+            case PION_ROUGE:
+                printf(FOND_NOIR "\033[31m R " RESET); // Rouge
+                break;
+            case DAME_ROUGE:
+                printf(FOND_NOIR "\033[31m[R]" RESET);
+                break;
+            case PION_JAUNE:
+                printf(FOND_NOIR "\033[33m J " RESET); // Jaune
+                break;
+            case DAME_JAUNE:
+                printf(FOND_NOIR "\033[33m[J]" RESET);
+                break;
+            case PION_VERT:
+                printf(FOND_NOIR "\033[32m V " RESET); // Vert
+                break;
+            case DAME_VERT:
+                printf(FOND_NOIR "\033[32m[V]" RESET);
+                break;
+            case CASE_VIDE:
+                // Alternance blanc/noir pour les cases vides
+                if ((i + j) % 2 == 0) {
+                    printf(FOND_BLANC "   " RESET);
+                } else {
+                    printf(FOND_NOIR "   " RESET);
+                }
+                break;
+            default:
+                printf(" ? "); // Cas invalide
+                break;
+        }
+    }
+}
+
+/*
+ * Affiche le damier complet avec les indices en haut et à gauche.
+ */
+void afficher_Damier(Damier* jeu) {
+    // Affiche les indices des colonnes (a à q) en haut
+    printf("    ");
+    for (int j = 0; j < TAILLE; j++) {
+        printf(TXT_BLEU " %c " RESET, 'a' + j);
+    }
+    printf("\n");
+
+    for (int i = 0; i < TAILLE; i++) {
+        // Affiche les indices des lignes (A à Q) à gauche
+        printf(TXT_BLEU " %c " RESET, 'A' + i);
+        for (int j = 0; j < TAILLE; j++) {
+            afficher_Cellule(i, j, jeu->index);
+        }
+        printf("\n");
+    }
+}
+
+/*
+ * Point d'entrée principal.
+ */
+int main() {
+    Damier jeu;
+
+    // Initialisation du damier
+    init_damier(&jeu);
+
+    // Affichage du damier avec ses couleurs
+    printf("Damier avec pions et couleurs :\n\n");
+    afficher_Damier(&jeu);
+
+    return 0;
+}
