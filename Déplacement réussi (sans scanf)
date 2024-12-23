@@ -1,0 +1,249 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+// Définition des constantes pour les types de pions et les couleurs
+#define PION_BLEU 1
+#define DAME_BLEU 2
+#define PION_ROUGE 3
+#define DAME_ROUGE 4
+#define PION_JAUNE 5
+#define DAME_JAUNE 6
+#define PION_VERT 7
+#define DAME_VERT 8
+#define CASE_VIDE 0
+
+// Dimensions du plateau
+#define TAILLE 17 // Le plateau est 17x17
+
+// Codes ANSI pour les couleurs
+#define RESET "\033[0m"   // Réinitialisation des styles
+#define FOND_CYAN "\033[46m" // Fond cyan
+#define FOND_NOIR "\033[40m"  // Fond noir
+#define FOND_BLANC "\033[47m" // Fond blanc
+#define TXT_BLEU "\033[34m"   // Texte bleu
+
+// Structure du plateau de jeu
+typedef struct {
+    int index[TAILLE][TAILLE]; // État du plateau
+    int nb_bleu, nb_rouge, nb_jaune, nb_vert; // Nombre de pions pour chaque couleur
+} Damier;
+
+// Structure pour représenter une case
+typedef struct {
+    int lig;  // Ligne de la case
+    int col;  // Colonne de la case
+} Case;
+
+// Structure pour représenter un déplacement
+typedef struct {
+    Case case_i;  // Case de départ
+    Case case_f;  // Case d'arrivée
+} Deplacement;
+
+/*
+ * Vérifie si une cellule appartient à l'un des 4 coins cyans de la matrice qui sont non affectables.
+ */
+int Coin_Cyan(int i, int j) {
+    return ((i >= 0 && i < 4 && j >= 0 && j < 4) ||       // Coin supérieur gauche
+            (i >= 13 && i < TAILLE && j >= 0 && j < 4) || // Coin inférieur gauche
+            (i >= 0 && i < 4 && j >= 13 && j < TAILLE) || // Coin supérieur droit
+            (i >= 13 && i < TAILLE && j >= 13 && j < TAILLE)); // Coin inférieur droit
+}
+
+/*
+ * Initialise le damier avec les pions dans les positions de départ.
+ */
+void init_damier(Damier* jeu) {
+    jeu->nb_bleu = 22;
+    jeu->nb_rouge = 22;
+    jeu->nb_jaune = 22;
+    jeu->nb_vert = 22;
+
+    // Initialisation du tableau
+    for (int i = 0; i < TAILLE; i++) {
+        for (int j = 0; j < TAILLE; j++) {
+            jeu->index[i][j] = CASE_VIDE;
+        }
+    }
+
+    // Placement des pions bleus (haut)
+    for (int i = 0; i < 5; i++) {
+        for (int j = 4; j < 13; j++) {
+            if ((i + j) % 2 == 1) {
+                jeu->index[i][j] = PION_BLEU;
+            }
+        }
+    }
+
+    // Placement des pions rouges (bas)
+    for (int i = 12; i < 17; i++) {
+        for (int j = 4; j < 13; j++) {
+            if ((i + j) % 2 == 1) {
+                jeu->index[i][j] = PION_ROUGE;
+            }
+        }
+    }
+
+    // Placement des pions jaunes (droite)
+    for (int i = 4; i < 13; i++) {
+        for (int j = 12; j < TAILLE; j++) {
+            if ((i + j) % 2 == 1) {
+                jeu->index[i][j] = PION_JAUNE;
+            }
+        }
+    }
+
+    // Placement des pions verts (gauche)
+    for (int i = 4; i < 13; i++) {
+        for (int j = 0; j < 5; j++) {
+            if ((i + j) % 2 == 1) {
+                jeu->index[i][j] = PION_VERT;
+            }
+        }
+    }
+}
+
+/*
+ * Affiche une cellule selon son état dans le damier.
+ */
+void afficher_Cellule(int i, int j, int index[TAILLE][TAILLE]) {
+    if (Coin_Cyan(i, j)) {
+        printf(FOND_CYAN "  " RESET); // Fond cyan sans traits noirs
+    } else {
+        switch (index[i][j]) {
+            case PION_BLEU:
+                printf(FOND_NOIR TXT_BLEU " o" RESET);
+                break;
+            case DAME_BLEU:
+                printf(FOND_NOIR TXT_BLEU "[O]" RESET);
+                break;
+            case PION_ROUGE:
+                printf(FOND_NOIR "\033[31m o" RESET);
+                break;
+            case DAME_ROUGE:
+                printf(FOND_NOIR "\033[31m[O]" RESET);
+                break;
+            case PION_JAUNE:
+                printf(FOND_NOIR "\033[33m o" RESET);
+                break;
+            case DAME_JAUNE:
+                printf(FOND_NOIR "\033[33m[O]" RESET);
+                break;
+            case PION_VERT:
+                printf(FOND_NOIR "\033[32m o" RESET);
+                break;
+            case DAME_VERT:
+                printf(FOND_NOIR "\033[32m[O]" RESET);
+                break;
+            case CASE_VIDE:
+                if ((i + j) % 2 == 0) {
+                    printf(FOND_BLANC "  " RESET);
+                } else {
+                    printf(FOND_NOIR "  " RESET);
+                }
+                break;
+            default:
+                printf(" ? ");
+                break;
+        }
+    }
+}
+
+/*
+ * Affiche le damier complet avec les indices en haut et à gauche.
+ */
+void afficher_Damier(Damier* jeu) {
+    printf("    ");
+    for (int j = 0; j < TAILLE; j++) {
+        printf(TXT_BLEU "%c " RESET, 'a' + j);
+    }
+    printf("\n");
+
+    for (int i = 0; i < TAILLE; i++) {
+        printf(TXT_BLEU " %c " RESET, 'A' + i);
+        for (int j = 0; j < TAILLE; j++) {
+            afficher_Cellule(i, j, jeu->index);
+        }
+        printf("\n");
+    }
+}
+
+/*
+ * Vérifie si un déplacement est valide (simple ou prise).
+ * Retourne :
+ *  0 : Déplacement simple valide.
+ *  1 : Prise valide.
+ * -1 : Déplacement invalide.
+ */
+int verifier_deplacement(int couleur, Deplacement d, Damier* jeu) {
+    if (jeu->index[d.case_i.lig][d.case_i.col] != couleur) return -1;
+    if (jeu->index[d.case_f.lig][d.case_f.col] != CASE_VIDE) return -1;
+
+    int diff_lig = d.case_f.lig - d.case_i.lig;
+    int diff_col = d.case_f.col - d.case_i.col;
+
+    if (abs(diff_lig) == 1 && abs(diff_col) == 1) {
+        return 0; // Déplacement simple valide
+    }
+
+    if (abs(diff_lig) == 2 && abs(diff_col) == 2) {
+        int mid_lig = (d.case_i.lig + d.case_f.lig) / 2;
+        int mid_col = (d.case_i.col + d.case_f.col) / 2;
+        int pion_adverse = jeu->index[mid_lig][mid_col];
+        if (pion_adverse != CASE_VIDE && pion_adverse != couleur) {
+            return 1; // Prise valide
+        }
+    }
+
+    return -1; // Déplacement invalide
+}
+
+/*
+ * Effectue un déplacement s'il est valide.
+ */
+bool deplacer_pion(int couleur, Deplacement d, Damier* jeu) {
+    int resultat = verifier_deplacement(couleur, d, jeu);
+
+    if (resultat == -1) {
+        printf("Déplacement invalide.\n");
+        return false;
+    }
+
+    jeu->index[d.case_i.lig][d.case_i.col] = CASE_VIDE;  // Vide la case de départ
+    jeu->index[d.case_f.lig][d.case_f.col] = couleur;    // Place le pion à la case d'arrivée
+
+    if (resultat == 1) {
+        int mid_lig = (d.case_i.lig + d.case_f.lig) / 2;
+        int mid_col = (d.case_i.col + d.case_f.col) / 2;
+        jeu->index[mid_lig][mid_col] = CASE_VIDE; // Vide la case intermédiaire
+    }
+
+    if ((couleur == PION_BLEU && d.case_f.lig == 16) ||
+        (couleur == PION_ROUGE && d.case_f.lig == 0) ||
+        (couleur == PION_JAUNE && d.case_f.col == 0) ||
+        (couleur == PION_VERT && d.case_f.col == 16)) {
+        jeu->index[d.case_f.lig][d.case_f.col] = couleur + 1; // Promotion en dame
+        printf("Promotion en dame !\n");
+    }
+
+    return true;
+}
+
+/*
+ * Point d'entrée principal.
+ */
+int main() {
+    Damier jeu;
+    init_damier(&jeu);
+
+    printf("Damier avec pions et couleurs :\n\n");
+    afficher_Damier(&jeu);
+
+    // Test de déplacement
+    Deplacement d = {{4, 5}, {5, 6}}; // Exemple de déplacement pour un pion bleu
+    deplacer_pion(PION_BLEU, d, &jeu);
+    afficher_Damier(&jeu);
+
+    return 0;
+}
