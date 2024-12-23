@@ -1,0 +1,74 @@
+#include <stdbool.h> // Pour utiliser le type bool
+
+/*
+ * Vérifie si un déplacement est valide (simple ou prise).
+ * Retourne :
+ *  0 : Déplacement simple valide.
+ *  1 : Prise valide.
+ * -1 : Déplacement invalide.
+ */
+int verifier_deplacement(int couleur, Deplacement d, Damier* jeu) {
+    // Vérifie que la case de départ contient un pion de la bonne couleur
+    if (jeu->index[d.case_i.lig][d.case_i.col] != couleur) return -1;
+
+    // Vérifie que la case d'arrivée est vide
+    if (jeu->index[d.case_f.lig][d.case_f.col] != CASE_VIDE) return -1;
+
+    // Calcul des écarts de lignes et colonnes
+    int diff_lig = d.case_f.lig - d.case_i.lig;
+    int diff_col = d.case_f.col - d.case_i.col;
+
+    // Déplacement simple (une seule case en diagonale)
+    if ((abs(diff_lig) == 1) && (abs(diff_col) == 1)) {
+        return 0; // Déplacement simple valide
+    }
+
+    // Prise (saut par-dessus un pion adverse)
+    if ((abs(diff_lig) == 2) && (abs(diff_col) == 2)) {
+        int mid_lig = (d.case_i.lig + d.case_f.lig) / 2;
+        int mid_col = (d.case_i.col + d.case_f.col) / 2;
+
+        // Vérifie qu'il y a un pion adverse sur la case intermédiaire
+        int pion_adverse = jeu->index[mid_lig][mid_col];
+        if ((pion_adverse != CASE_VIDE) && (pion_adverse != couleur)) {
+            return 1; // Prise valide
+        }
+    }
+
+    return -1; // Déplacement invalide
+}
+
+/*
+ * Effectue un déplacement s'il est valide.
+ */
+bool deplacer_pion(int couleur, Deplacement d, Damier* jeu) {
+    // Vérifie la validité du déplacement
+    int resultat = verifier_deplacement(couleur, d, jeu);
+
+    if (resultat == -1) {
+        printf("Déplacement invalide.\n");
+        return false;
+    }
+
+    // Déplace le pion
+    jeu->index[d.case_i.lig][d.case_i.col] = CASE_VIDE;  // Vide la case de départ
+    jeu->index[d.case_f.lig][d.case_f.col] = couleur;    // Place le pion à la case d'arrivée
+
+    // Si c'est une prise, supprime le pion adverse
+    if (resultat == 1) {
+        int mid_lig = (d.case_i.lig + d.case_f.lig) / 2;
+        int mid_col = (d.case_i.col + d.case_f.col) / 2;
+        jeu->index[mid_lig][mid_col] = CASE_VIDE; // Vide la case intermédiaire
+    }
+
+    // Promotion en dame si le pion atteint la dernière rangée
+    if ((couleur == PION_BLEU && d.case_f.lig == 16) ||
+        (couleur == PION_ROUGE && d.case_f.lig == 0) ||
+        (couleur == PION_JAUNE && d.case_f.col == 0) ||
+        (couleur == PION_VERT && d.case_f.col == 16)) {
+        jeu->index[d.case_f.lig][d.case_f.col] = couleur + 1; // Promotion en dame
+        printf("Promotion en dame !\n");
+    }
+
+    return true;
+}
