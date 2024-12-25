@@ -1,0 +1,66 @@
+int verifier_deplacement(int couleur, Deplacement d, Damier* jeu) {
+    int lig_i = d.case_i.numero / TAILLE;
+    int col_i = d.case_i.numero % TAILLE;
+    int lig_f = d.case_f.numero / TAILLE;
+    int col_f = d.case_f.numero % TAILLE;
+
+    EtatCase etat_depart = etat_case(lig_i, col_i, jeu);
+    EtatCase etat_arrivee = etat_case(lig_f, col_f, jeu);
+
+    if (etat_depart != OCCUPEE || jeu->index[lig_i][col_i] != couleur) return -1;
+    if (etat_arrivee != LIBRE) return -1;
+
+    int diff_lig = lig_f - lig_i;
+    int diff_col = col_f - col_i;
+
+    if (abs(diff_lig) == 1 && abs(diff_col) == 1) {
+        d.Mouvement = "AvG";
+        return 0;
+    }
+
+    if (abs(diff_lig) == 2 && abs(diff_col) == 2) {
+        int mid_lig = (lig_i + lig_f) / 2;
+        int mid_col = (col_i + col_f) / 2;
+        if (etat_case(mid_lig, mid_col, jeu) == OCCUPEE && jeu->index[mid_lig][mid_col] != couleur) {
+            d.Mouvement = "PriseAvG";
+            return 1;
+        }
+    }
+
+    d.Mouvement = "Aucun";
+    return -1;
+}
+
+bool deplacer_pion(int couleur, Deplacement d, Damier* jeu) {
+    int resultat = verifier_deplacement(couleur, d, jeu);
+
+    if (resultat == -1) {
+        d.Commentaire = "?";
+        printf("Déplacement invalide.\n");
+        return false;
+    }
+
+    int lig_i = d.case_i.numero / TAILLE;
+    int col_i = d.case_i.numero % TAILLE;
+    int lig_f = d.case_f.numero / TAILLE;
+    int col_f = d.case_f.numero % TAILLE;
+
+    jeu->index[lig_i][col_i] = CASE_VIDE;
+    jeu->index[lig_f][col_f] = couleur;
+
+    if (resultat == 1) {
+        int mid_lig = (lig_i + lig_f) / 2;
+        int mid_col = (col_i + col_f) / 2;
+        jeu->index[mid_lig][mid_col] = CASE_VIDE;
+        d.Commentaire = "!=coup fort";
+    }
+
+    if ((couleur == PION_BLEU && lig_f == 16) ||
+        (couleur == PION_ROUGE && lig_f == 0) ||
+        (couleur == PION_JAUNE && col_f == 0) ||
+        (couleur == PION_VERT && col_f == 16)) {
+        jeu->index[lig_f][col_f] = couleur;
+    }
+
+    return true;
+}
