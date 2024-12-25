@@ -1,0 +1,52 @@
+/*
+ * Vérifie si un déplacement est valide selon les règles du jeu.
+ */
+int deplacement_valide(Damier* jeu, int x_depart, int y_depart, int x_arrivee, int y_arrivee) {
+    int pion = jeu->index[x_depart][y_depart];
+
+    // Vérifie si les coordonnées de départ et d'arrivée sont valides
+    if (x_arrivee < 0 || x_arrivee >= TAILLE || y_arrivee < 0 || y_arrivee >= TAILLE) {
+        printf("Coordonnées hors du plateau.\n");
+        return 0;
+    }
+
+    // Vérifie si la case d'arrivée est jouable
+    if (etat_case(x_arrivee, y_arrivee, jeu) != LIBRE) {
+        printf("Case d'arrivée invalide ou occupée.\n");
+        return 0;
+    }
+
+    // Vérifie le type de pion et les règles de déplacement
+    switch (pion) {
+        case PION_BLEU:
+            if (x_arrivee == x_depart - 1 && (y_arrivee == y_depart - 1 || y_arrivee == y_depart + 1)) {
+                return 1; // Déplacement diagonal pour un pion bleu
+            }
+            break;
+
+        case PION_ROUGE:
+            if (x_arrivee == x_depart + 1 && (y_arrivee == y_depart - 1 || y_arrivee == y_depart + 1)) {
+                return 1; // Déplacement diagonal pour un pion rouge
+            }
+            break;
+
+        case PION_JAUNE:
+            if ((x_arrivee == x_depart - 1 || x_arrivee == x_depart + 1) && y_arrivee == y_depart + 1) {
+                return 1; // Déplacement diagonal vers la droite pour un pion jaune
+            }
+            break;
+
+        case PION_VERT:
+            if ((x_arrivee == x_depart - 1 || x_arrivee == x_depart + 1) && y_arrivee == y_depart - 1) {
+                return 1; // Déplacement diagonal vers la gauche pour un pion vert
+            }
+            break;
+
+        default:
+            printf("Type de pion non reconnu.\n");
+            return 0;
+    }
+
+    printf("Déplacement non valide selon les règles du jeu.\n");
+    return 0;
+}
