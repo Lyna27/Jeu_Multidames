@@ -1,0 +1,51 @@
+typedef enum {
+    LIBRE,        // Case vide et utilisable
+    OCCUPEE,      // Case occupée par un pion
+    NON_AFFECTABLE // Case non jouable (par exemple, hors des zones jouables)
+} EtatCase;
+
+// Fonction pour déterminer l'état d'une case
+EtatCase etat_case(int i, int j, Damier* jeu) {
+    if (Coin_Cyan(i, j)) {
+        return NON_AFFECTABLE; // Cases des coins cyan
+    }
+
+    switch (jeu->index[i][j]) {
+        case CASE_VIDE:
+            return LIBRE;
+        case PION_BLEU:
+        case DAME_BLEU:
+        case PION_ROUGE:
+        case DAME_ROUGE:
+        case PION_JAUNE:
+        case DAME_JAUNE:
+        case PION_VERT:
+        case DAME_VERT:
+            return OCCUPEE;
+        default:
+            return NON_AFFECTABLE; // Cas inattendu
+    }
+}
+
+// Une fois dans le damier
+void afficher_etats_cases(Damier* jeu) {
+    printf("États des cases :\n\n");
+    for (int i = 0; i < TAILLE; i++) {
+        for (int j = 0; j < TAILLE; j++) {
+            EtatCase etat = etat_case(i, j, jeu);
+            switch (etat) {
+                case LIBRE:
+                    printf(" L ");
+                    break;
+                case OCCUPEE:
+                    printf(" O ");
+                    break;
+                case NON_AFFECTABLE:
+                    printf(" N ");
+                    break;
+            }
+        }
+        printf("\n");
+    }
+}
+
