@@ -1,0 +1,120 @@
+typedef struct {
+    int i; // Ligne
+    int j; // Colonne
+} Case;
+
+// Vérification des mouvements
+bool verifier_mouvement(Case case_debut, Case case_fin, Mouvement* mouv, bool* prise, Damier* jeu) {
+    // Initialiser les valeurs de sortie
+    *mouv = Aucun;
+    *prise = false;
+
+    // Calcul des différences entre les indices des cases
+    int di = case_fin.i - case_debut.i;
+    int dj = case_fin.j - case_debut.j;
+
+    // Vérification des différents types de mouvements
+    if (di == 1 && dj == -1) {
+        *mouv = AvG;  // Avant Gauche
+    } else if (di == 1 && dj == 1) {
+        *mouv = AvD;  // Avant Droite
+    } else if (di == 2 && dj == -2) {
+        // Vérifier la case intermédiaire pour une prise Avant Gauche
+        if (etat_case(case_debut.i + 1, case_debut.j - 1, jeu) == OCCUPEE) {
+            *mouv = PriseAvG;
+            *prise = true;
+        }
+    } else if (di == 2 && dj == 2) {
+        // Vérifier la case intermédiaire pour une prise Avant Droite
+        if (etat_case(case_debut.i + 1, case_debut.j + 1, jeu) == OCCUPEE) {
+            *mouv = PriseAvD;
+            *prise = true;
+        }
+    } else if (di == -1 && dj == -1) {
+        *mouv = ArG;  // Arrière Gauche
+    } else if (di == -1 && dj == 1) {
+        *mouv = ArD;  // Arrière Droite
+    } else if (di == -2 && dj == -2) {
+        // Vérifier la case intermédiaire pour une prise Arrière Gauche
+        if (etat_case(case_debut.i - 1, case_debut.j - 1, jeu) == OCCUPEE) {
+            *mouv = PriseArG;
+            *prise = true;
+        }
+    } else if (di == -2 && dj == 2) {
+        // Vérifier la case intermédiaire pour une prise Arrière Droite
+        if (etat_case(case_debut.i - 1, case_debut.j + 1, jeu) == OCCUPEE) {
+            *mouv = PriseArD;
+            *prise = true;
+        }
+    }
+
+    // Vérifier si la case d'arrivée est valide pour le mouvement
+    if (*mouv != Aucun && etat_case(case_fin.i, case_fin.j, jeu) == LIBRE) {
+        return true;
+    }
+
+    // Si aucune condition valide n'est remplie, le mouvement est invalide
+    return false;
+}
+
+// Fonction principale pour gérer un mouvement
+void effectuer_mouvement(Damier* jeu) {
+    Case case_debut, case_fin;
+    Mouvement mouv;
+    bool prise;
+    char commentaire[256];
+
+    printf("Entrez la case de départ (i j) : ");
+    scanf("%d %d", &case_debut.i, &case_debut.j);
+
+    printf("Entrez la case de fin (i j) : ");
+    scanf("%d %d", &case_fin.i, &case_fin.j);
+
+    if (verifier_mouvement(case_debut, case_fin, &mouv, &prise, jeu)) {
+        printf("Mouvement valide : ");
+
+        // Affichage du type de mouvement
+        switch (mouv) {
+            case AvG: printf("Avant Gauche\n"); break;
+            case AvD: printf("Avant Droite\n"); break;
+            case PriseAvG: printf("Prise Avant Gauche\n"); break;
+            case PriseAvD: printf("Prise Avant Droite\n"); break;
+            case PriseArG: printf("Prise Arrière Gauche\n"); break;
+            case PriseArD: printf("Prise Arrière Droite\n"); break;
+            case ArG: printf("Arrière Gauche\n"); break;
+            case ArD: printf("Arrière Droite\n"); break;
+            default: break;
+        }
+
+        printf("Prise : %s\n", prise ? "Oui" : "Non");
+
+        // Mettre à jour le damier
+        jeu->index[case_debut.i][case_debut.j] = LIBRE;
+        jeu->index[case_fin.i][case_fin.j] = OCCUPEE;
+        if (prise) {
+            jeu->index[(case_debut.i + case_fin.i) / 2][(case_debut.j + case_fin.j) / 2] = LIBRE;
+        }
+
+        // Commentaire facultatif
+        printf("Entrez un commentaire pour ce mouvement : ");
+        scanf(" %[^\n]", commentaire);
+        printf("Commentaire : %s\n", commentaire);
+    } else {
+        printf("Mouvement invalide.\n");
+    }
+}
+
+int main() {
+    Damier jeu = {{{LIBRE}}};
+    effectuer_mouvement(&jeu);
+    return 0;
+}
+/* Ce que ça pourait donner:
+Entrez la case de départ (i j) : 5 2
+Entrez la case de fin (i j) : 6 3
+Mouvement valide : Avant Droite
+Prise : Non
+Entrez un commentaire pour ce mouvement : Coup offensif pour bloquer l'adversaire.
+Commentaire : Coup offensif pour bloquer l'adversaire.
+*/
+
