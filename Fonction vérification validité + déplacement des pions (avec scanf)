@@ -1,3 +1,35 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h> // Pour utiliser le type bool
+
+// Dimensions du plateau
+#define TAILLE 17 // Le plateau est 17x17
+
+typedef enum {
+    LIBRE, 
+    OCCUPEE, 
+    NON_AFFECTABLE
+} EtatCase;
+
+typedef enum{
+    AvG,
+    AvD,
+    PriseAvG,
+    PriseAvD,
+    PriseArG,
+    PriseArD,
+    ArG,
+    ArD,
+    Aucun
+} Mouvement;
+
+// Structure du plateau de jeu
+typedef struct {
+    int index[TAILLE][TAILLE]; // État du plateau
+    //int temp[TAILLE][TAILLE];
+    int nb_bleu, nb_rouge, nb_jaune, nb_vert; // Nombre de pions pour chaque couleur
+} Damier;
+
 typedef struct {
     int i; // Ligne
     int j; // Colonne
@@ -20,13 +52,13 @@ bool verifier_mouvement(Case case_debut, Case case_fin, Mouvement* mouv, bool* p
         *mouv = AvD;  // Avant Droite
     } else if (di == 2 && dj == -2) {
         // Vérifier la case intermédiaire pour une prise Avant Gauche
-        if (etat_case(case_debut.i + 1, case_debut.j - 1, jeu) == OCCUPEE) {
+        if (jeu->index[case_debut.i + 1][case_debut.j - 1] == OCCUPEE) {
             *mouv = PriseAvG;
             *prise = true;
         }
     } else if (di == 2 && dj == 2) {
         // Vérifier la case intermédiaire pour une prise Avant Droite
-        if (etat_case(case_debut.i + 1, case_debut.j + 1, jeu) == OCCUPEE) {
+        if (jeu->index[case_debut.i + 1][case_debut.j + 1] == OCCUPEE) {
             *mouv = PriseAvD;
             *prise = true;
         }
@@ -36,20 +68,20 @@ bool verifier_mouvement(Case case_debut, Case case_fin, Mouvement* mouv, bool* p
         *mouv = ArD;  // Arrière Droite
     } else if (di == -2 && dj == -2) {
         // Vérifier la case intermédiaire pour une prise Arrière Gauche
-        if (etat_case(case_debut.i - 1, case_debut.j - 1, jeu) == OCCUPEE) {
+        if (jeu->index[case_debut.i - 1][case_debut.j - 1] == OCCUPEE) {
             *mouv = PriseArG;
             *prise = true;
         }
     } else if (di == -2 && dj == 2) {
         // Vérifier la case intermédiaire pour une prise Arrière Droite
-        if (etat_case(case_debut.i - 1, case_debut.j + 1, jeu) == OCCUPEE) {
+        if (jeu->index[case_debut.i - 1][case_debut.j + 1] == OCCUPEE) {
             *mouv = PriseArD;
             *prise = true;
         }
     }
 
     // Vérifier si la case d'arrivée est valide pour le mouvement
-    if (*mouv != Aucun && etat_case(case_fin.i, case_fin.j, jeu) == LIBRE) {
+    if (*mouv != Aucun && jeu->index[case_fin.i][case_fin.j] == LIBRE) {
         return true;
     }
 
@@ -104,6 +136,7 @@ void effectuer_mouvement(Damier* jeu) {
     }
 }
 
+
 int main() {
     Damier jeu = {{{LIBRE}}};
     effectuer_mouvement(&jeu);
@@ -117,4 +150,3 @@ Prise : Non
 Entrez un commentaire pour ce mouvement : Coup offensif pour bloquer l'adversaire.
 Commentaire : Coup offensif pour bloquer l'adversaire.
 */
-
