@@ -1,0 +1,249 @@
+\\------------------------------------- Pour la rafle---------------
+int calculer_rafle_max(Damier* jeu, Case position, Couleur_joueur joueur, int captures) {
+    int max_captures = captures;
+    int directions[8][2] = {{-2, -2}, {-2, 2}, {2, -2}, {2, 2}, {-4, -4}, {-4, 4}, {4, -4}, {4, 4}};
+    /*Pour le rapport
+  int directions[8][2] = {
+    {-2, -2}, // Saut en haut à gauche
+    {-2,  2}, // Saut en haut à droite
+    { 2, -2}, // Saut en bas à gauche
+    { 2,  2}, // Saut en bas à droite
+    {-4, -4}, // Saut multiple en haut à gauche
+    {-4,  4}, // Saut multiple en haut à droite
+    { 4, -4}, // Saut multiple en bas à gauche
+    { 4,  4}  // Saut multiple en bas à droite
+}; 8 pour les directions possibles et 2 pour la dimension */
+
+    for (int d = 0; d < 8; d++) {
+        int i_mid = position.i + directions[d][0] / 2;
+        int j_mid = position.j + directions[d][1] / 2;
+        int i_fin = position.i + directions[d][0];
+        int j_fin = position.j + directions[d][1];
+        /*i_mid, j_mid : Coordonnées de la case intermédiaire (où se trouve le pion à capturer).
+        i_fin, j_fin : Coordonnées de la case finale après le saut.*/
+
+        // Vérifier les limites du plateau
+        if (i_fin < 0 || i_fin >= TAILLE || j_fin < 0 || j_fin >= TAILLE) continue;
+
+        // Vérifier que la case intermédiaire contient un pion adverse
+        if (jeu->index[i_mid][j_mid] != joueur && jeu->index[i_mid][j_mid] != CASE_VIDE &&
+            jeu->index[i_fin][j_fin] == CASE_VIDE) {
+
+            // Effectuer le mouvement temporaire
+            int temp = jeu->index[i_mid][j_mid];
+            jeu->index[i_mid][j_mid] = CASE_VIDE;
+            jeu->index[i_fin][j_fin] = jeu->index[position.i][position.j];
+            jeu->index[position.i][position.j] = CASE_VIDE;
+
+            // Appel récursif
+            int rafle = calculer_rafle_max(jeu, (Case){i_fin, j_fin}, joueur, captures + 1);
+
+            // Restaurer l'état du plateau
+            jeu->index[position.i][position.j] = jeu->index[i_fin][j_fin];
+            jeu->index[i_fin][j_fin] = CASE_VIDE;
+            jeu->index[i_mid][j_mid] = temp;
+
+            // Mettre à jour la rafle maximale
+            if (rafle > max_captures) {
+                max_captures = rafle;
+            }
+        }
+    }
+    return max_captures;
+}
+
+
+
+//----------------------------------------- Pour le Score---------------------------------------------------------------
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <math.h>
+
+// Définition des constantes pour les types de pions et les couleurs
+#define PION_BLEU 1
+#define DAME_BLEU 2
+#define PION_ROUGE 3
+#define DAME_ROUGE 4
+#define PION_JAUNE 5
+#define DAME_JAUNE 6
+#define PION_VERT 7
+#define DAME_VERT 8
+#define CASE_VIDE 0
+
+// Dimensions du plateau
+#define TAILLE 17 // Le plateau est 17x17
+
+// Codes ANSI pour les couleurs
+#define RESET "\033[0m"   // Réinitialisation des styles
+#define FOND_CYAN "\033[46m" // Fond cyan
+#define FOND_NOIR "\033[40m"  // Fond noir
+#define FOND_BLANC "\033[47m" // Fond blanc
+#define TXT_BLEU "\033[34m"   // Texte bleu
+
+// Structure du plateau de jeu
+typedef struct {
+    int index[TAILLE][TAILLE]; // État du plateau
+    int nb_bleu, nb_rouge, nb_jaune, nb_vert; // Nombre de pions pour chaque couleur
+} Damier;
+
+// Joueur
+typedef enum {
+    Rouge,
+    Vert,
+    Bleu,
+    Jaune    
+} Couleur_joueur;
+
+// Structure pour représenter une case
+typedef struct {
+    int i; // Ligne
+    int j; // Colonne
+} Case;
+
+// Définition des scores
+typedef struct {
+    int rouges; // Pions mangés par le joueur rouge
+    int verts;  // Pions mangés par le joueur vert
+    int jaunes; // Pions mangés par le joueur jaune
+    int bleus;  // Pions mangés par le joueur bleu
+} Scores;
+
+// Fonction pour initialiser les scores
+void initialiser_scores(Scores* scores) {
+    scores->rouges = 0;
+    scores->verts = 0;
+    scores->jaunes = 0;
+    scores->bleus = 0;
+}
+
+// Fonction pour mettre à jour les scores après une capture
+void mettre_a_jour_scores(Scores* scores, Couleur_joueur joueur, int pion_capture) {
+    switch (pion_capture) {
+        case PION_BLEU:
+        case DAME_BLEU:
+            if (joueur == Rouge) scores->rouges++;
+            if (joueur == Vert) scores->verts++;
+            if (joueur == Jaune) scores->jaunes++;
+            break;
+        case PION_ROUGE:
+        case DAME_ROUGE:
+            if (joueur == Bleu) scores->bleus++;
+            if (joueur == Vert) scores->verts++;
+            if (joueur == Jaune) scores->jaunes++;
+            break;
+        case PION_JAUNE:
+        case DAME_JAUNE:
+            if (joueur == Bleu) scores->bleus++;
+            if (joueur == Rouge) scores->rouges++;
+            if (joueur == Vert) scores->verts++;
+            break;
+        case PION_VERT:
+        case DAME_VERT:
+            if (joueur == Bleu) scores->bleus++;
+            if (joueur == Rouge) scores->rouges++;
+            if (joueur == Jaune) scores->jaunes++;
+            break;
+    }
+}
+
+// Fonction pour afficher les scores
+void afficher_scores(Scores* scores) {
+    printf("Scores des joueurs :\n");
+    printf("Joueur Rouge : %d pions capturés\n", scores->rouges);
+    printf("Joueur Vert  : %d pions capturés\n", scores->verts);
+    printf("Joueur Jaune : %d pions capturés\n", scores->jaunes);
+    printf("Joueur Bleu  : %d pions capturés\n", scores->bleus);
+}
+
+// Initialise le damier
+void init_damier(Damier* jeu) {
+    jeu->nb_bleu = jeu->nb_rouge = jeu->nb_jaune = jeu->nb_vert = 22;
+    for (int i = 0; i < TAILLE; i++) {
+        for (int j = 0; j < TAILLE; j++) {
+            jeu->index[i][j] = CASE_VIDE;
+        }
+    }
+    for (int i = 0; i < 5; i++) {
+        for (int j = 4; j < 13; j++) {
+            if ((i + j) % 2 == 1) jeu->index[i][j] = PION_BLEU;
+        }
+    }
+    for (int i = 12; i < 17; i++) {
+        for (int j = 4; j < 13; j++) {
+            if ((i + j) % 2 == 1) jeu->index[i][j] = PION_ROUGE;
+        }
+    }
+    for (int i = 4; i < 13; i++) {
+        for (int j = 12; j < TAILLE; j++) {
+            if ((i + j) % 2 == 1) jeu->index[i][j] = PION_JAUNE;
+        }
+    }
+    for (int i = 4; i < 13; i++) {
+        for (int j = 0; j < 5; j++) {
+            if ((i + j) % 2 == 1) jeu->index[i][j] = PION_VERT;
+        }
+    }
+}
+
+// Fonction de déplacement avec mise à jour des scores
+Damier* mvt(Damier* jeu, Scores* scores, Couleur_joueur joueur) {
+    Case case_debut, case_fin;
+    printf("Entrez la case de départ (i j) : ");
+    scanf("%d %d", &case_debut.i, &case_debut.j);
+    printf("Entrez la case de fin (i j) : ");
+    scanf("%d %d", &case_fin.i, &case_fin.j);
+
+    int i_mid = (case_debut.i + case_fin.i) / 2;
+    int j_mid = (case_debut.j + case_fin.j) / 2;
+
+    if (jeu->index[case_debut.i][case_debut.j] != CASE_VIDE &&
+        jeu->index[case_fin.i][case_fin.j] == CASE_VIDE &&
+        jeu->index[i_mid][j_mid] != CASE_VIDE &&
+        jeu->index[i_mid][j_mid] != joueur) {
+        
+        mettre_a_jour_scores(scores, joueur, jeu->index[i_mid][j_mid]);
+        jeu->index[i_mid][j_mid] = CASE_VIDE;
+        jeu->index[case_fin.i][case_fin.j] = jeu->index[case_debut.i][case_debut.j];
+        jeu->index[case_debut.i][case_debut.j] = CASE_VIDE;
+    } else {
+        printf("Mouvement invalide.\n");
+    }
+    return jeu;
+}
+
+// Afficher le damier
+void afficher_Damier(Damier* jeu) {
+    printf("    ");
+    for (int j = 0; j < TAILLE; j++) printf("%c ", 'a' + j);
+    printf("\n");
+    for (int i = 0; i < TAILLE; i++) {
+        printf("%c ", 'A' + i);
+        for (int j = 0; j < TAILLE; j++) {
+            if (jeu->index[i][j] == CASE_VIDE) printf(" . ");
+            else printf(" %d ", jeu->index[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+// Programme principal
+int main() {
+    Damier jeu;
+    Scores scores;
+
+    init_damier(&jeu);
+    initialiser_scores(&scores);
+
+    afficher_Damier(&jeu);
+
+    for (int tour = 0; tour < 5; tour++) { // Limité à 5 tours pour tester
+        Couleur_joueur joueur = (tour % 4);
+        printf("Tour du joueur %d\n", joueur);
+        mvt(&jeu, &scores, joueur);
+        afficher_Damier(&jeu);
+        afficher_scores(&scores);
+    }
+
+    return 0;
+}
