@@ -1,0 +1,455 @@
+\\------------------------------------- Pour la rafle ---------------
+int calculer_rafle_max(Damier* jeu, Case position, Couleur_joueur joueur, int captures) {
+    int max_captures = captures;
+    int directions[8][2] = {{-2, -2}, {-2, 2}, {2, -2}, {2, 2}, {-4, -4}, {-4, 4}, {4, -4}, {4, 4}};
+    /*Pour le rapport
+  int directions[8][2] = {
+    {-2, -2}, // Saut en haut à gauche
+    {-2,  2}, // Saut en haut à droite
+    { 2, -2}, // Saut en bas à gauche
+    { 2,  2}, // Saut en bas à droite
+    {-4, -4}, // Saut multiple en haut à gauche
+    {-4,  4}, // Saut multiple en haut à droite
+    { 4, -4}, // Saut multiple en bas à gauche
+    { 4,  4}  // Saut multiple en bas à droite
+}; 8 pour les directions possibles et 2 pour la dimension */
+    for (int d = 0; d < 8; d++) {
+        int i_mid = position.i + directions[d][0] / 2;
+        int j_mid = position.j + directions[d][1] / 2;
+        int i_fin = position.i + directions[d][0];
+        int j_fin = position.j + directions[d][1];
+        /*i_mid, j_mid : Coordonnées de la case intermédiaire (où se trouve le pion à capturer).
+        i_fin, j_fin : Coordonnées de la case finale après le saut.*/
+   // Vérifier les limites du plateau
+        if (i_fin < 0 || i_fin >= TAILLE || j_fin < 0 || j_fin >= TAILLE) continue;
+
+        // Vérifier que la case intermédiaire contient un pion adverse
+        if (jeu->index[i_mid][j_mid] != joueur && jeu->index[i_mid][j_mid] != CASE_VIDE &&
+            jeu->index[i_fin][j_fin] == CASE_VIDE) {
+
+            // Effectuer le mouvement temporaire
+            int temp = jeu->index[i_mid][j_mid];
+            jeu->index[i_mid][j_mid] = CASE_VIDE;
+            jeu->index[i_fin][j_fin] = jeu->index[position.i][position.j];
+            jeu->index[position.i][position.j] = CASE_VIDE;
+
+            // Appel récursif
+            int rafle = calculer_rafle_max(jeu, (Case){i_fin, j_fin}, joueur, captures + 1);
+
+            // Restaurer l'état du plateau
+            jeu->index[position.i][position.j] = jeu->index[i_fin][j_fin];
+            jeu->index[i_fin][j_fin] = CASE_VIDE;
+            jeu->index[i_mid][j_mid] = temp;
+
+            // Mettre à jour la rafle maximale
+            if (rafle > max_captures) {
+                max_captures = rafle;
+            }
+        }
+    }
+    return max_captures;
+}
+//----------------------------------------- Pour le Score---------------------------------------------------------------
+// Définition des scores
+typedef struct {
+    int rouges; // Pions mangés par le joueur rouge
+    int verts;  // Pions mangés par le joueur vert
+    int jaunes; // Pions mangés par le joueur jaune
+    int bleus;  // Pions mangés par le joueur bleu
+} Scores;
+// Fonction pour initialiser les scores
+void initialiser_scores(Scores* scores) {
+    scores->rouges = 0;
+    scores->verts = 0;
+    scores->jaunes = 0;
+    scores->bleus = 0;
+}
+// Fonction pour mettre à jour les scores après une capture
+void mettre_a_jour_scores(Scores* scores, Couleur_joueur joueur, int pion_capture) {
+    switch (pion_capture) {
+        case PION_BLEU:
+        case DAME_BLEU:
+            if (joueur == Rouge) scores->rouges++;
+            if (joueur == Vert) scores->verts++;
+            if (joueur == Jaune) scores->jaunes++;
+            break;
+        case PION_ROUGE:
+        case DAME_ROUGE:
+            if (joueur == Bleu) scores->bleus++;
+            if (joueur == Vert) scores->verts++;
+            if (joueur == Jaune) scores->jaunes++;
+            break;
+        case PION_JAUNE:
+        case DAME_JAUNE:
+            if (joueur == Bleu) scores->bleus++;
+            if (joueur == Rouge) scores->rouges++;
+            if (joueur == Vert) scores->verts++;
+            break;
+        case PION_VERT:
+        case DAME_VERT:
+            if (joueur == Bleu) scores->bleus++;
+            if (joueur == Rouge) scores->rouges++;
+            if (joueur == Jaune) scores->jaunes++;
+            break;
+    }
+}
+// Fonction pour afficher les scores
+void afficher_scores(Scores* scores) {
+    printf("Scores des joueurs :\n");
+    printf("Joueur Rouge : %d pions capturés\n", scores->rouges);
+    printf("Joueur Vert  : %d pions capturés\n", scores->verts);
+    printf("Joueur Jaune : %d pions capturés\n", scores->jaunes);
+    printf("Joueur Bleu  : %d pions capturés\n", scores->bleus);
+}
+//Mettre à jour la fonction déplacement
+
+// --------------------- Déplacement réuss sans scanf apres plusieurs tentatives  ---------------------------
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+// Définition des constantes pour les types de pions et les couleurs
+#define PION_BLEU 1
+#define DAME_BLEU 2
+#define PION_ROUGE 3
+#define DAME_ROUGE 4
+#define PION_JAUNE 5
+#define DAME_JAUNE 6
+#define PION_VERT 7
+#define DAME_VERT 8
+#define CASE_VIDE 0
+
+// Dimensions du plateau
+#define TAILLE 17 // Le plateau est 17x17
+
+// Codes ANSI pour les couleurs
+#define RESET "\033[0m"   // Réinitialisation des styles
+#define FOND_CYAN "\033[46m" // Fond cyan
+#define FOND_NOIR "\033[40m"  // Fond noir
+#define FOND_BLANC "\033[47m" // Fond blanc
+#define TXT_BLEU "\033[34m"   // Texte bleu
+
+// Structure du plateau de jeu
+typedef struct {
+    int index[TAILLE][TAILLE]; // État du plateau
+    int nb_bleu, nb_rouge, nb_jaune, nb_vert; // Nombre de pions pour chaque couleur
+} Damier;
+
+// Structure pour représenter une case
+typedef struct {
+    int numero;  // Numéro de la case
+} Case_debut, Case_fin;
+
+// Structure pour représenter un déplacement
+typedef struct {
+    Case_debut case_i;  // Case de départ
+    Case_fin case_f;    // Case d'arrivée
+    char* Mouvement;    // Type de mouvement
+    char* Commentaire;  // Commentaire sur le mouvement
+    struct Deplacement* Mouv_suivant; // Pointeur vers le prochain mouvement
+} Deplacement;
+
+// Fonction pour vérifier si une cellule appartient à un coin cyan
+int Coin_Cyan(int i, int j) {
+    return ((i >= 0 && i < 4 && j >= 0 && j < 4) ||       // Coin supérieur gauche
+            (i >= 13 && i < TAILLE && j >= 0 && j < 4) || // Coin inférieur gauche
+            (i >= 0 && i < 4 && j >= 13 && j < TAILLE) || // Coin supérieur droit
+            (i >= 13 && i < TAILLE && j >= 13 && j < TAILLE)); // Coin inférieur droit
+}
+
+// Initialise le damier
+void init_damier(Damier* jeu) {
+    jeu->nb_bleu = 22;
+    jeu->nb_rouge = 22;
+    jeu->nb_jaune = 22;
+    jeu->nb_vert = 22;
+
+    for (int i = 0; i < TAILLE; i++) {
+        for (int j = 0; j < TAILLE; j++) {
+            jeu->index[i][j] = CASE_VIDE;
+        }
+    }
+
+    for (int i = 0; i < 5; i++) {
+        for (int j = 4; j < 13; j++) {
+            if ((i + j) % 2 == 1) {
+                jeu->index[i][j] = PION_BLEU;
+            }
+        }
+    }
+
+    for (int i = 12; i < 17; i++) {
+        for (int j = 4; j < 13; j++) {
+            if ((i + j) % 2 == 1) {
+                jeu->index[i][j] = PION_ROUGE;
+            }
+        }
+    }
+
+    for (int i = 4; i < 13; i++) {
+        for (int j = 12; j < TAILLE; j++) {
+            if ((i + j) % 2 == 1) {
+                jeu->index[i][j] = PION_JAUNE;
+            }
+        }
+    }
+
+    for (int i = 4; i < 13; i++) {
+        for (int j = 0; j < 5; j++) {
+            if ((i + j) % 2 == 1) {
+                jeu->index[i][j] = PION_VERT;
+            }
+        }
+    }
+}
+
+void afficher_Cellule(int i, int j, int index[TAILLE][TAILLE]) {
+    if (Coin_Cyan(i, j)) {
+        printf(FOND_CYAN "  " RESET);
+    } else {
+        switch (index[i][j]) {
+            case PION_BLEU:
+                printf(FOND_NOIR TXT_BLEU " o" RESET);
+                break;
+            case DAME_BLEU:
+                printf(FOND_NOIR TXT_BLEU "[O]" RESET);
+                break;
+            case PION_ROUGE:
+                printf(FOND_NOIR "\033[31m o" RESET);
+                break;
+            case DAME_ROUGE:
+                printf(FOND_NOIR "\033[31m[O]" RESET);
+                break;
+            case PION_JAUNE:
+                printf(FOND_NOIR "\033[33m o" RESET);
+                break;
+            case DAME_JAUNE:
+                printf(FOND_NOIR "\033[33m[O]" RESET);
+                break;
+            case PION_VERT:
+                printf(FOND_NOIR "\033[32m o" RESET);
+                break;
+            case DAME_VERT:
+                printf(FOND_NOIR "\033[32m[O]" RESET);
+                break;
+            case CASE_VIDE:
+                if ((i + j) % 2 == 0) {
+                    printf(FOND_BLANC "  " RESET);
+                } else {
+                    printf(FOND_NOIR "  " RESET);
+                }
+                break;
+            default:
+                printf(" ? ");
+                break;
+        }
+    }
+}
+
+void afficher_Damier(Damier* jeu) {
+    printf("    ");
+    for (int j = 0; j < TAILLE; j++) {
+        printf(TXT_BLEU "%c " RESET, 'a' + j);
+    }
+    printf("\n");
+
+    for (int i = 0; i < TAILLE; i++) {
+        printf(TXT_BLEU " %c " RESET, 'A' + i);
+        for (int j = 0; j < TAILLE; j++) {
+            afficher_Cellule(i, j, jeu->index);
+        }
+        printf("\n");
+    }
+}
+
+int verifier_deplacement(int couleur, Deplacement d, Damier* jeu) {
+    if (jeu->index[d.case_i.numero / TAILLE][d.case_i.numero % TAILLE] != couleur) return -1;
+    if (jeu->index[d.case_f.numero / TAILLE][d.case_f.numero % TAILLE] != CASE_VIDE) return -1;
+
+    int lig_i = d.case_i.numero / TAILLE;
+    int col_i = d.case_i.numero % TAILLE;
+    int lig_f = d.case_f.numero / TAILLE;
+    int col_f = d.case_f.numero % TAILLE;
+
+    int diff_lig = lig_f - lig_i;
+    int diff_col = col_f - col_i;
+
+    if (abs(diff_lig) == 1 && abs(diff_col) == 1) {
+        d.Mouvement = "AvG";
+        return 0;
+    }
+
+    if (abs(diff_lig) == 2 && abs(diff_col) == 2) {
+        int mid_lig = (lig_i + lig_f) / 2;
+        int mid_col = (col_i + col_f) / 2;
+        int pion_adverse = jeu->index[mid_lig][mid_col];
+        if (pion_adverse != CASE_VIDE && pion_adverse != couleur) {
+            d.Mouvement = "PriseAvG";
+            return 1;
+        }
+    }
+
+    d.Mouvement = "Aucun";
+    return -1;
+}
+
+bool deplacer_pion(int couleur, Deplacement d, Damier* jeu) {
+    int resultat = verifier_deplacement(couleur, d, jeu);
+
+    if (resultat == -1) {
+        d.Commentaire = "?";
+        printf("Déplacement invalide.\n");
+        return false;
+    }
+
+    int lig_i = d.case_i.numero / TAILLE;
+    int col_i = d.case_i.numero % TAILLE;
+    int lig_f = d.case_f.numero / TAILLE;
+    int col_f = d.case_f.numero % TAILLE;
+
+    jeu->index[lig_i][col_i] = CASE_VIDE;
+    jeu->index[lig_f][col_f] = couleur;
+
+    if (resultat == 1) {
+        int mid_lig = (lig_i + lig_f) / 2;
+        int mid_col = (col_i + col_f) / 2;
+        jeu->index[mid_lig][mid_col] = CASE_VIDE;
+        d.Commentaire = "!=coup fort";
+    }
+
+    if ((couleur == PION_BLEU && lig_f == 16) ||
+        (couleur == PION_ROUGE && lig_f == 0) ||
+        (couleur == PION_JAUNE && col_f == 0) ||
+        (couleur == PION_VERT && col_f == 16)) {
+        jeu->index[lig_f][col_f] = couleur + 1;
+        printf("Promotion en dame !\n");
+    }
+
+    return true;
+}
+
+int main() {
+    Damier jeu;
+    init_damier(&jeu);
+
+    printf("Damier avec pions et couleurs :\n\n");
+    afficher_Damier(&jeu);
+
+    Deplacement d = {{4 * TAILLE + 5}, {5 * TAILLE + 6}, "AvG", NULL, NULL};
+    deplacer_pion(PION_BLEU, d, &jeu);
+    afficher_Damier(&jeu);
+
+    return 0;
+}
+/* A ajouter au rapport :
+AvG: Avancer en diagonale vers la gauche.
+AvD: Avancer en diagonale vers la droite.
+PriseAvG: Prendre un pion en avançant vers la gauche.
+PriseAvD: Prendre un pion en avançant vers la droite.
+PriseArG: Prendre un pion en reculant vers la gauche.
+PriseArD: Prendre un pion en reculant vers la droite.
+ArG: Reculer en diagonale vers la gauche.
+ArD: Reculer en diagonale vers la droite.
+Aucun:Aucun déplacement valide.*/
+    if (abs(diff_lig) == 2 && abs(diff_col) == 2) {
+        int mid_lig = (lig_i + lig_f) / 2;
+        int mid_col = (col_i + col_f) / 2;
+        int pion_adverse = jeu->index[mid_lig][mid_col];
+        if (pion_adverse != CASE_VIDE && pion_adverse != couleur) {
+            d.Mouvement = "PriseAvG";
+            return 1;
+        }
+    }
+
+    d.Mouvement = "Aucun";
+    return -1;
+}
+
+bool deplacer_pion(int couleur, Deplacement d, Damier* jeu) {
+    int resultat = verifier_deplacement(couleur, d, jeu);
+
+    if (resultat == -1) {
+        d.Commentaire = "?";
+        printf("Déplacement invalide.\n");
+        return false;
+    }
+
+    int lig_i = d.case_i.numero / TAILLE;
+    int col_i = d.case_i.numero % TAILLE;
+    int lig_f = d.case_f.numero / TAILLE;
+    int col_f = d.case_f.numero % TAILLE;
+
+    jeu->index[lig_i][col_i] = CASE_VIDE;
+    jeu->index[lig_f][col_f] = couleur;
+
+    if (resultat == 1) {
+        int mid_lig = (lig_i + lig_f) / 2;
+        int mid_col = (col_i + col_f) / 2;
+        jeu->index[mid_lig][mid_col] = CASE_VIDE;
+        d.Commentaire = "!=coup fort";
+    }
+
+    if ((couleur == PION_BLEU && lig_f == 16) ||
+        (couleur == PION_ROUGE && lig_f == 0) ||
+        (couleur == PION_JAUNE && col_f == 0) ||
+        (couleur == PION_VERT && col_f == 16)) {
+        jeu->index[lig_f][col_f] = couleur + 1;
+        printf("Promotion en dame !\n");
+    }
+
+    return true;
+}
+
+//---------------------- L'une des anciennes tentatives de déplacement  -------------------
+/*
+ * Vérifie si un déplacement est valide selon les règles du jeu.
+ */
+int deplacement_valide(Damier* jeu, int x_depart, int y_depart, int x_arrivee, int y_arrivee) {
+    int pion = jeu->index[x_depart][y_depart];
+
+    // Vérifie si les coordonnées de départ et d'arrivée sont valides
+    if (x_arrivee < 0 || x_arrivee >= TAILLE || y_arrivee < 0 || y_arrivee >= TAILLE) {
+        printf("Coordonnées hors du plateau.\n");
+        return 0;
+    }
+
+    // Vérifie si la case d'arrivée est jouable
+    if (etat_case(x_arrivee, y_arrivee, jeu) != LIBRE) {
+        printf("Case d'arrivée invalide ou occupée.\n");
+        return 0;
+    }
+
+    // Vérifie le type de pion et les règles de déplacement
+    switch (pion) {
+        case PION_BLEU:
+            if (x_arrivee == x_depart - 1 && (y_arrivee == y_depart - 1 || y_arrivee == y_depart + 1)) {
+                return 1; // Déplacement diagonal pour un pion bleu
+            }
+            break;
+
+        case PION_ROUGE:
+            if (x_arrivee == x_depart + 1 && (y_arrivee == y_depart - 1 || y_arrivee == y_depart + 1)) {
+                return 1; // Déplacement diagonal pour un pion rouge
+            }
+            break;
+
+        case PION_JAUNE:
+            if ((x_arrivee == x_depart - 1 || x_arrivee == x_depart + 1) && y_arrivee == y_depart + 1) {
+                return 1; // Déplacement diagonal vers la droite pour un pion jaune
+            }
+            break;
+
+        case PION_VERT:
+            if ((x_arrivee == x_depart - 1 || x_arrivee == x_depart + 1) && y_arrivee == y_depart - 1) {
+                return 1; // Déplacement diagonal vers la gauche pour un pion vert
+            }
+            break;
+
+        default:
+            printf("Type de pion non reconnu.\n");
+            return 0;
+    }
+
+    printf("Déplacement non valide selon les règles du jeu.\n");
+    return 0;
+}
